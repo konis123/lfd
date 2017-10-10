@@ -89,64 +89,121 @@ for imagePath in IMAGE_PATHS:
 
 '''
 
-
-#아래 코드가 glob으로 여러각도와 거리에서 측정된 사진으로 캘리브레이션해서 보정하고 왜곡수정한 사진 보여주는거임 ㅎㅎ...
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import glob
 import pickle
-#%matplotlib inline
 
-objpoints = []
-imgpoints = []
-'''
- #여기는 캘리브레이션 할때만 하면되고 보통 저장한값 불러쓰면댐
-images = glob.glob('./calibration_wide/GOPR00*.jpg')
+def calibrateAndGetUndistortedImage(dimg, nx=8, ny=6, imagesPath=None):
+    objpoints = []
+    imgpoints = []
 
-objp = np.zeros((6*8,3), np.float32)
-objp[:,:2] = np.mgrid[0:8,0:6].T.reshape(-1,2)
+    if imagesPath != None:#캘리브레이션진행?
+        images = glob.glob(imagesPath)#'./calibration_wide/GOPR00*.jpg'
 
-for fname in images:
-    img = mpimg.imread(fname)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        objp = np.zeros((6*8,3), np.float32)
+        objp[:,:2] = np.mgrid[0:8,0:6].T.reshape(-1,2)
 
+        for fname in images:
+            img = mpimg.imread(fname)
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            ret, corners = cv2.findChessboardCorners(gray, (8,6), None)
+
+            if ret == True:
+                imgpoints.append(corners)
+                objpoints.append(objp)
+
+
+        with open('calib.p', 'wb') as f:
+            dist_pickle = {}
+            dist_pickle['objpoints'] = objpoints
+            dist_pickle['imgpoints'] = imgpoints
+            pickle.dump(dist_pickle, f)
+            f.close()
+
+    else:
+        with open( "calib.p", "rb" ) as f:
+            dist_pickle = pickle.load(f)
+            objpoints = dist_pickle['objpoints']
+            imgpoints = dist_pickle['imgpoints']
+            f.close()
+
+    gray = cv2.cvtColor(dimg, cv2.COLOR_BGR2GRAY)
     #ret, corners = cv2.findChessboardCorners(gray, (8,6), None)
+    #img = cv2.drawChessboardCorners(dimg, (8,6), corners, ret)
+    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+
+    undist = cv2.undistort(dimg, mtx, dist, None, mtx)
+
+    #return undist
+    ####여기서부터 바꿔야할듯
+    topdown, perspective_M = corners_unwarp(dimg, nx, ny, mtx, dist)
+    return topdown
+    '''
+    undistGray = cv2.cvtColor(undist, cv2.COLOR_BGR2GRAY)
+    ret, corners = cv2.findChessboardCorners(undistGray, (nx, ny), None)
 
     if ret == True:
-        imgpoints.append(corners)
-        objpoints.append(objp)
+        cv2.drawChessboardCorners(undist, (nx, ny), corners, ret)
+        offset = 300 # offset for dst points
+        img_size = (gray.shape[1], gray.shape[0])
+
+        src = np.float32([corners[0], corners[nx-1], corners[-1], corners[-nx]])
+        dst = np.float32([[offset, offset], [img_size[0]-offset, offset],
+                                     [img_size[0]-offset, img_size[1]-offset],
+                                     [offset, img_size[1]-offset]])
+        # Given src and dst points, calculate the perspective transform matrix
+        M = cv2.getPerspectiveTransform(src, dst)
+        # Warp the image using OpenCV warpPerspective()
+        warped = cv2.warpPerspective(undist, M, img_size)
+
+    # Return the resulting image and matrix
+    return warped, M
+    ####요기까지
+    '''
 
 
-with open('calib_objpoints.p','wb') as f:
-    pickle.dump(objpoints, f)
-    f.close()
+#현재 이거
+def corners_unwarp(img, nx, ny, mtx, dist):
+    # Use the OpenCV undistort() function to remove distortion
+    undist = cv2.undistort(img, mtx, dist, None, mtx)
+    # Convert undistorted image to grayscale
+    gray = cv2.cvtColor(undist, cv2.COLOR_BGR2GRAY)
+    # Search for corners in the grayscaled image
+    ret, corners = cv2.findChessboardCorners(gray, (nx, ny), None)
 
-with open('calib_imgpoints.p','wb') as f:
-    pickle.dump(imgpoints, f)
-    f.close()
-'''
+    if ret == True:
+        # If we found corners, draw them! (just for fun)
+        cv2.drawChessboardCorners(undist, (nx, ny), corners, ret)
+        # Choose offset from image corners to plot detected corners
+        # This should be chosen to present the result at the proper aspect ratio
+        # My choice of 100 pixels is not exact, but close enough for our purpose here
+        offset = 200 # offset for dst points
+        # Grab the image shape
+        img_size = (gray.shape[1], gray.shape[0])
 
-#objpoints하고 imgpoints 가져오기
-with open( "calib_objpoints.p", "rb" ) as f:
-    objpoints =pickle.load(f)
-    f.close()
-with open( "calib_imgpoints.p", "rb" ) as f:
-    imgpoints =pickle.load(f)
-    f.close()
+        # For source points I'm grabbing the outer four detected corners
+        src = np.float32([corners[0], corners[nx-1], corners[-1], corners[-nx]])
+        # For destination points, I'm arbitrarily choosing some points to be
+        # a nice fit for displaying our warped result
+        # again, not exact, but close enough for our purposes
+        dst = np.float32([[offset, offset], [img_size[0]-offset, offset],
+                                     [img_size[0]-offset, img_size[1]-offset],
+                                     [offset, img_size[1]-offset]])
+        # Given src and dst points, calculate the perspective transform matrix
+        M = cv2.getPerspectiveTransform(src, dst)
+        # Warp the image using OpenCV warpPerspective()
+        warped = cv2.warpPerspective(undist, M, img_size)
 
-img = cv2.imread('./calibration_wide/GOPR0032.jpg')
+    # Return the resulting image and matrix
+    return warped, M
 
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-ret, corners = cv2.findChessboardCorners(gray, (8,6), None)
-img = cv2.drawChessboardCorners(img, (8,6), corners, ret)
-#plt.imshow(img)
-ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
-dst = cv2.undistort(img, mtx, dist, None, mtx)
-cv2.imshow('asdf', dst)
-key = cv2.waitKey(0)
-#if key==27:
-#    cv2.destroyAllWindows()
-#    break
-#cv2.destroyAllWindows()
+
+distImage = cv2.imread('./calibration_wide/GOPR0032.jpg')
+topdown = calibrateAndGetUndistortedImage(distImage)
+cv2.imshow('asdf', topdown)
+#cv2.imshow('hi',calibrateAndGetUndistortedImage(distImage))
+#cv2.imshow('hi',calibrateAndGetUndistortedImage(distImage,imagesPath='./calibration_wide/GOPR00*.jpg'))
+cv2.waitKey(0)
