@@ -38,19 +38,55 @@ print('theta : ', getTheta(CAMERA_HEIGHT, CHESSBOARD_DISTANCE, CHESSBOARD_HEIGHT
 
 
 
-img = cv2.imread('bg.jpg')
+#tan안씌우고 비례한거
+'''
+aP = 110    #체스판 윗부분
+bP = 90     #체스판 아랜부분
+
+atobPixel = 30
+
+tanAlpha = CHESSBOARD_DISTANCE / (CAMERA_HEIGHT - aP)
+tanBeta = CHESSBOARD_DISTANCE / (CAMERA_HEIGHT - bP)
+
+tanTheta = (tanAlpha - tanBeta) / (1 + tanAlpha*tanBeta)
+theta = math.atan(tanTheta)
+
+radPerPixel = theta / atobPixel
+
+imgHeight = np.size(image, 0)
+imgWidth = np.size(image, 1)
+
+myPointY = 800  #임시로 아무값이나 넣어본거
+vanishingPointY = imgHeight/2
+
+myTheta = (somPointY - vanishingPointY) * radPerPixel
+
+myDistance = CAMERA_HEIGHT / math.tan(myTheta)
+
+print(myDistance)
+'''
+
+img = cv2.imread('nega.jpg')
 
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-ret, corners = cv2.findChessboardCorners(gray, (6,4), None)
-'''
-print(int(corners[12][0][0]))#왼쪽
-print(int(corners[12][0][1]))
+ret, corners = cv2.findChessboardCorners(gray, (15,6), None)
+if ret==True:
 
-print(int(corners[17][0][0]))#오른쪽
-print(int(corners[17][0][1]))
-'''
-che_dis = int(corners[17][0][0]) - int(corners[12][0][0])
-print(che_dis)
+    che_dis = corners[30][0][1] - corners[45][0][1]#int(corners[30][0][1]) - int(corners[45][0][1])
+    print(che_dis)
 
 
-img = cv2.drawChessboardCorners(img, (6,4), corners, ret)
+    img = cv2.drawChessboardCorners(img, (15,6), corners, ret)
+
+    cv2.imshow('esf',img)
+    cv2.waitKey(0)
+
+    theta = math.atan(CAMERA_HEIGHT / CHESSBOARD_DISTANCE)
+    temp = theta * 180 / math.pi;
+    print(temp)
+
+    oneDo = che_dis / temp
+    print(oneDo)
+
+else:
+    print('why!?!?!??!?!?')

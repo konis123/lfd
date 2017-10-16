@@ -135,11 +135,13 @@ def calibrateAndGetUndistortedImage(dimg, nx=8, ny=6, imagesPath=None):
     #img = cv2.drawChessboardCorners(dimg, (8,6), corners, ret)
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 
+    print(dist)
     undist = cv2.undistort(dimg, mtx, dist, None, mtx)
 
     #return undist
     ####여기서부터 바꿔야할듯
     topdown, perspective_M = corners_unwarp(dimg, nx, ny, mtx, dist)
+    #print(perspective_M)
     return topdown
     '''
     undistGray = cv2.cvtColor(undist, cv2.COLOR_BGR2GRAY)
