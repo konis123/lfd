@@ -4,17 +4,10 @@ import cv2
 
 #코너들의 좌표를 리턴
 def findCorners(img, nx, ny):
-    resultImage = np.copy(img)
+    #resultImage = np.copy(img)
 
     #엣지찾기
     mag_binary = mag_thresh(img, sobel_kernel=5, mag_thresh=(150, 255))
-    #cv2.imshow('img', mag_binary)
-
-    #이거 일단 보류
-    # lines = cv2.HoughLinesP(mag_binary, 1, np.pi/180, 200, 10, 100)
-    # for line in lines:
-    #     x1, y1, x2, y2 = line[0]
-    #     cv2.line(img, (x1,y1), (x2, y2), (0, 255, 0), 2)
 
     rows = []
     cols = []
@@ -25,7 +18,6 @@ def findCorners(img, nx, ny):
         r, theta = line[0]
         angle = int(theta*180/np.pi)
         if angle == 90:#가로줄
-            #print(r)
             x0 = 0
             y0 = r
             x1 = int(x0 + 1000*(-1))
@@ -33,9 +25,8 @@ def findCorners(img, nx, ny):
             x2 = int(x0 - 1000*(-1))
             y2 = int(y0)
             rows.append(r)
-            cv2.line(resultImage, (x1, y1), (x2, y2), (0, 255, 0), 1)
+            #cv2.line(resultImage, (x1, y1), (x2, y2), (0, 255, 0), 1)
         elif angle == 0:#세로줄
-            #print(r)
             x0 = r
             y0 = 0
             x1 = int(x0)
@@ -43,7 +34,7 @@ def findCorners(img, nx, ny):
             x2 = int(x0)
             y2 = int(y0 - 1000)
             cols.append(r)
-            cv2.line(resultImage, (x1, y1), (x2, y2), (0, 255, 0), 1)
+            #cv2.line(resultImage, (x1, y1), (x2, y2), (0, 255, 0), 1)
 
     cols.sort()
     rows.sort()
@@ -78,7 +69,6 @@ def findCornersImage(img, nx, ny):
         r, theta = line[0]
         angle = int(theta*180/np.pi)
         if angle == 90:#가로줄
-            #print(r)
             x0 = 0
             y0 = r
             x1 = int(x0 + 1000*(-1))
@@ -87,7 +77,6 @@ def findCornersImage(img, nx, ny):
             y2 = int(y0)
             cv2.line(resultImage, (x1, y1), (x2, y2), (0, 255, 0), 1)
         elif angle == 0:#세로줄
-            #print(r)
             x0 = r
             y0 = 0
             x1 = int(x0)
