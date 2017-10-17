@@ -103,13 +103,13 @@ def calibrateAndGetUndistortedImage(dimg, nx=8, ny=6, imagesPath=None):
     if imagesPath != None:#캘리브레이션진행?
         images = glob.glob(imagesPath)#'./calibration_wide/GOPR00*.jpg'
 
-        objp = np.zeros((6*8,3), np.float32)
-        objp[:,:2] = np.mgrid[0:8,0:6].T.reshape(-1,2)
+        objp = np.zeros((ny*nx,3), np.float32)
+        objp[:,:2] = np.mgrid[0:nx,0:ny].T.reshape(-1,2)
 
         for fname in images:
             img = mpimg.imread(fname)
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            ret, corners = cv2.findChessboardCorners(gray, (8,6), None)
+            ret, corners = cv2.findChessboardCorners(gray, (nx,ny), None)
 
             if ret == True:
                 imgpoints.append(corners)
@@ -142,6 +142,7 @@ def calibrateAndGetUndistortedImage(dimg, nx=8, ny=6, imagesPath=None):
     ####여기서부터 바꿔야할듯
     topdown, perspective_M = corners_unwarp(dimg, nx, ny, mtx, dist)
     #print(perspective_M)
+
     return topdown
     '''
     undistGray = cv2.cvtColor(undist, cv2.COLOR_BGR2GRAY)
@@ -176,6 +177,10 @@ def corners_unwarp(img, nx, ny, mtx, dist):
     # Search for corners in the grayscaled image
     ret, corners = cv2.findChessboardCorners(gray, (nx, ny), None)
 
+    print(ret,"dsadsf")
+    M = 0
+    warped = 0
+
     if ret == True:
         # If we found corners, draw them! (just for fun)
         cv2.drawChessboardCorners(undist, (nx, ny), corners, ret)
@@ -203,8 +208,9 @@ def corners_unwarp(img, nx, ny, mtx, dist):
     return warped, M
 
 
-distImage = cv2.imread('./calibration_wide/GOPR0032.jpg')
-topdown = calibrateAndGetUndistortedImage(distImage)
+
+distImage = cv2.imread('./iphoneCal/IMG_4677.jpg')
+topdown = calibrateAndGetUndistortedImage(distImage, nx=7, ny=7, imagesPath='./iphoneCal/*.jpg')
 cv2.imshow('asdf', topdown)
 #cv2.imshow('hi',calibrateAndGetUndistortedImage(distImage))
 #cv2.imshow('hi',calibrateAndGetUndistortedImage(distImage,imagesPath='./calibration_wide/GOPR00*.jpg'))

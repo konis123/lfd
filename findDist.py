@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import cv2
 import math
 
@@ -15,7 +15,7 @@ obj_dist = 300  #####값조정이 필요함
 obj_height = 120    #####
 camera_height = 120 #####
 
-img = cv2.imread('IMG4650.jpg')
+img = cv2.imread('IMG4650.jpg')#IMG4650
 
 height, width = img.shape[:2]
 print(height,',', width)
