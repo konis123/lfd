@@ -109,15 +109,26 @@ def calibrateAndSave(nx, ny, imagesPath=None):
     objp[:,:2] = np.mgrid[0:nx,0:ny].T.reshape(-1,2)
 
     for fname in images:
-        print(len(images))
         img = mpimg.imread(fname)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        ret, gray = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+        #cv2.imshow('gray',gray)
+        #cv2.waitKey(0)
         ret, corners = cv2.findChessboardCorners(gray, (nx,ny), None)
+
+        ###임시적으로 코너그린거보려고 넣은거임#######################
+        '''print(ret)
+        temp = cv2.drawChessboardCorners(img, (nx,ny), corners, ret)
+        cv2.imshow('img',temp)'''
+        ###
 
         if ret == True:
             imgpoints.append(corners)
             objpoints.append(objp)
 
+    if len(imgpoints) == 0:
+        print('corners 발견하지 못함')
+        return
 
     with open('calib.p', 'wb') as f:
         dist_pickle['objpoints'] = objpoints
@@ -125,45 +136,11 @@ def calibrateAndSave(nx, ny, imagesPath=None):
         pickle.dump(dist_pickle, f)
         f.close()
 
-    # if calib==True:#캘리브레이션진행?
-    #     if imagesPath == None:
-    #         print('no imagesPath')
-    #         return
-    #
-    #     images = glob.glob(imagesPath)#'./calibration_wide/GOPR00*.jpg'
-    #
-    #     objp = np.zeros((ny*nx,3), np.float32)
-    #     objp[:,:2] = np.mgrid[0:nx,0:ny].T.reshape(-1,2)
-    #
-    #     for fname in images:
-    #         print(len(images))
-    #         img = mpimg.imread(fname)
-    #         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    #         ret, corners = cv2.findChessboardCorners(gray, (nx,ny), None)
-    #
-    #         if ret == True:
-    #             imgpoints.append(corners)
-    #             objpoints.append(objp)
-    #
-    #
-    #     with open('calib.p', 'wb') as f:
-    #         dist_pickle['objpoints'] = objpoints
-    #         dist_pickle['imgpoints'] = imgpoints
-    #         pickle.dump(dist_pickle, f)
-    #         f.close()
-    #
-    # else:
-    #     with open( "calib.p", "rb" ) as f:
-    #         dist_pickle = pickle.load(f)
-    #         objpoints = dist_pickle['objpoints']
-    #         imgpoints = dist_pickle['imgpoints']
-    #         f.close()
 
-    #gray = cv2.cvtColor(dimg, cv2.COLOR_BGR2GRAY)
-    #ret, corners = cv2.findChessboardCorners(gray, (8,6), None)
-    #img = cv2.drawChessboardCorners(dimg, (8,6), corners, ret)
     gray = cv2.cvtColor(tempImage, cv2.COLOR_BGR2GRAY)
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+
+    print('tvecs : ', tvecs)
 
     with open('calib.p', 'wb') as f:
         dist_pickle['mtx'] = mtx
@@ -173,21 +150,38 @@ def calibrateAndSave(nx, ny, imagesPath=None):
 
     return mtx, dist
 
-    #왜곡을 보정한 이미지를 구하고 리턴함
-    #print(dist)
-    #undist = cv2.undistort(dimg, mtx, dist, None, mtx)
-    #return undist
+#testing
+def corners_unwarp(img, mtx, dist, distorted=False, corners=None, nx=None, ny=None):
+    if distorted:
+        img = cv2.undistort(img, mtx, dist, None, mtx)
 
-    ####탑다운뷰와 변환하는 매트릭스를 구함 undist가아니라 dimg였음
-    # topdown, perspective_M = corners_unwarp(dimg, nx, ny, mtx, dist)
-    # print(perspective_M)
-    #
-    # return topdown
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
+    offset = 500
+
+    #img_size[0] : 가로
+    #img_size[1] : 세로
+    img_size = (gray.shape[1], gray.shape[0])
+
+
+    src = np.float32([corners[0], corners[1], corners[-1], corners[2]])
+
+    dst = np.float32([[offset, offset], [img_size[0]-offset, offset],
+                                 [img_size[0]-offset, img_size[1]-offset],
+                                 [offset, img_size[1]-offset]])
+
+
+    #src = np.float32([[0,0],[img_size[0],0],[img_size[0],img_size[1]],[0,img_size[1]])
+    #dst = np.float32([])
+    M = cv2.getPerspectiveTransform(src, dst)
+
+    warped = cv2.warpPerspective(undist, M, img_size)
+
+    return warped, M
 
 
 #현재 이거
-def corners_unwarp(img, nx, ny, mtx, dist, points=None):
+def corners_unwarp2(img, nx, ny, mtx, dist, points=None):
     undist = cv2.undistort(img, mtx, dist, None, mtx)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     ret, corners = cv2.findChessboardCorners(gray, (nx, ny), None)
@@ -195,18 +189,23 @@ def corners_unwarp(img, nx, ny, mtx, dist, points=None):
     M = 0
     warped = 0
 
+    print(ret)
     if ret == True:
+        #밑에 src가 잘못됨!!!!!!!!!!!!!!@@@@@################
         # If we found corners, draw them! (just for fun)
         #####cv2.drawChessboardCorners(undist, (nx, ny), corners, ret)
         # Choose offset from image corners to plot detected corners
         # This should be chosen to present the result at the proper aspect ratio
-        # My choice of 100 pixels is not exact, but close enough for our purpose here
-        offset = 100 # offset for dst points
+        # My choice of 100 pixels is not exacWt, but close enough for our purpose here
+        Xoffset = 100.0 # offset for dst points
+        Yoffset = 200.0
+        offset = 0
         # Grab the image shape
         img_size = (gray.shape[1], gray.shape[0])
-
+        print(corners[0][0][0])
         # For source points I'm grabbing the outer four detected corners
-        src = np.float32([corners[0], corners[nx-1], corners[-1], corners[-nx]])
+        #src = np.float32([corners[0], corners[nx-1], corners[-1], corners[-nx]])
+        src = np.float32([ [corners[0][0][0]-Xoffset,corners[0][0][1]+Yoffset], [corners[nx-1][0][0]+Xoffset, corners[nx-1][0][1]+Yoffset], [corners[-1][0][0]+Xoffset, corners[-1][0][1]-Yoffset], [corners[-nx][0][0]-Xoffset, corners[-nx][0][1]+Yoffset] ])
         # For destination points, I'm arbitrarily choosing some points to be
         # a nice fit for displaying our warped result
         # again, not exact, but close enough for our purposes
@@ -222,16 +221,25 @@ def corners_unwarp(img, nx, ny, mtx, dist, points=None):
     return warped, M
 
 
+if __name__=="__main__":
 
-distImage = cv2.imread('./calibration_wide/GOPR0032.jpg')
-mtx, dist = calibrateAndSave(nx=8, ny=6, imagesPath='./calibration_wide/*.jpg')
+    distImage = cv2.imread('./iphone3.jpeg')
+    mtx, dist = calibrateAndSave(nx=14, ny=4, imagesPath='./iphone3.jpeg')
+    #distImage = cv2.imread('./calibration_wide/GOPR004.jpg')
+    #mtx, dist = calibrateAndSave(nx=8, ny=6, imagesPath='./calibration_wide/GOPR0034.jpg')
 
-topdownView, M = corners_unwarp(distImage, nx=8, ny=6, mtx=mtx, dist=dist, points=None)
-cv2.imshow('asdf', topdownView)
+    #mtx, dist를 이용해 왜곡을 수정한 이미지를 구함
+    undistorted = cv2.undistort(distImage, mtx, dist, None, mtx)
+    cv2.imshow('undistort', undistorted)
+
+
+    topdownView, M = corners_unwarp2(distImage, nx=14, ny=4, mtx=mtx, dist=dist, points=None)
+    #topdownView, M = corners_unwarp2(distImage, nx=8, ny=6, mtx=mtx, dist=dist, points=None)
+    cv2.imshow('asdf', topdownView)
 
 
 
 
 
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()

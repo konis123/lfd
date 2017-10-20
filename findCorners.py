@@ -109,7 +109,7 @@ def mag_thresh(img, sobel_kernel=3, mag_thresh=(0, 255)):
 
 
 
-img = cv2.imread('./bg.jpg')
+img = cv2.imread('./iphone.jpeg')
 
 rImg = findCornersImage(img, 8, 1)
 cv2.imshow('d',rImg)
