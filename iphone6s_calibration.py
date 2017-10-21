@@ -157,14 +157,20 @@ def corners_unwarp(img, mtx, dist, distorted=False, corners=None, nx=None, ny=No
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    offset = 500
+    Xoffset = 100.0  # offset for dst points
+    Yoffset = 300.0
+    offset = 000
 
     #img_size[0] : 가로
     #img_size[1] : 세로
     img_size = (gray.shape[1], gray.shape[0])
 
+    src = np.float32([[corners[0][0][0] - Xoffset, corners[0][0][1] - Yoffset],
+                      [corners[nx - 1][0][0] + Xoffset, corners[nx - 1][0][1] - Yoffset],
+                      [corners[-1][0][0] + Xoffset, corners[-1][0][1] + Yoffset],
+                      [corners[-nx][0][0] - Xoffset, corners[-nx][0][1] + Yoffset]])
 
-    src = np.float32([corners[0], corners[1], corners[-1], corners[2]])
+    #src = np.float32([corners[0], corners[1], corners[-1], corners[2]])
 
     dst = np.float32([[offset, offset], [img_size[0]-offset, offset],
                                  [img_size[0]-offset, img_size[1]-offset],
@@ -189,23 +195,24 @@ def corners_unwarp2(img, nx, ny, mtx, dist, points=None):
     M = 0
     warped = 0
 
+    cv2.imshow('undist',img)
+
     print(ret)
     if ret == True:
-        #밑에 src가 잘못됨!!!!!!!!!!!!!!@@@@@################
         # If we found corners, draw them! (just for fun)
         #####cv2.drawChessboardCorners(undist, (nx, ny), corners, ret)
         # Choose offset from image corners to plot detected corners
         # This should be chosen to present the result at the proper aspect ratio
         # My choice of 100 pixels is not exacWt, but close enough for our purpose here
-        Xoffset = 100.0 # offset for dst points
-        Yoffset = 200.0
+        Xoffset = 100#200.0 # offset for dst points
+        Yoffset = 100#300.0
         offset = 0
         # Grab the image shape
         img_size = (gray.shape[1], gray.shape[0])
         print(corners[0][0][0])
         # For source points I'm grabbing the outer four detected corners
         #src = np.float32([corners[0], corners[nx-1], corners[-1], corners[-nx]])
-        src = np.float32([ [corners[0][0][0]-Xoffset,corners[0][0][1]+Yoffset], [corners[nx-1][0][0]+Xoffset, corners[nx-1][0][1]+Yoffset], [corners[-1][0][0]+Xoffset, corners[-1][0][1]-Yoffset], [corners[-nx][0][0]-Xoffset, corners[-nx][0][1]+Yoffset] ])
+        src = np.float32([ [corners[0][0][0]-Xoffset,corners[0][0][1]-Yoffset], [corners[nx-1][0][0]+Xoffset, corners[nx-1][0][1]-Yoffset], [corners[-1][0][0]+Xoffset, corners[-1][0][1]+Yoffset], [corners[-nx][0][0]-Xoffset, corners[-nx][0][1]+Yoffset] ])
         # For destination points, I'm arbitrarily choosing some points to be
         # a nice fit for displaying our warped result
         # again, not exact, but close enough for our purposes
