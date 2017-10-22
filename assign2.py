@@ -13,14 +13,13 @@ import math
 
 '''
 
-
-
 if __name__=="__main__":
     obj = input('몇 m 거리를 표시할까요?')
-    obj = int(obj)*100
+    obj = float(obj)*100
 
     imgFilePath = input('이미지 경로 입력 : ')
-    img = cv2.imread('./iphone3_white.jpeg')#cv2.imread(imgFilePath)
+    #img = cv2.imread('./iphone3_white.jpeg')
+    img = cv2.imread(imgFilePath)
 
     ### 알고있는 정보이므로 직접 입력해주어야함
     CAMERA_HEIGHT = 160
