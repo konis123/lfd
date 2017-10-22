@@ -59,7 +59,7 @@ camera_height = 160 #####
 
 if __name__=="__main__":
 
-    img = cv2.imread('./iphone_white.jpeg')#IMG4650
+    img = cv2.imread('iphone_white.jpeg')#IMG4650
     img2 = img.copy()
 
     height, width = img.shape[:2]
@@ -75,11 +75,11 @@ if __name__=="__main__":
     ret, corners = cv2.findChessboardCorners(gray, (15,5), None)
     img = cv2.drawChessboardCorners(img, (15,5), corners, ret)
 
-    #v2.imshow('chess', img)
+    cv2.imshow('chess', img)
 
     mtx, dist = calibrateAndSave(nx=15,ny=5,imagesPath='./iphone_white.jpeg')
     undistorted = cv2.undistort(img2, mtx, dist, None, mtx)
-    #cv2.imshow('undistort', undistorted)
+    cv2.imshow('undistort', undistorted)
     topdownView, M = corners_unwarp2(img2, nx=15, ny=5, mtx=mtx, dist=dist, points=None)
     cv2.imshow('topdownView', topdownView)
     print(M)

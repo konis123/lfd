@@ -2,6 +2,9 @@ import numpy as np
 import cv2
 #%matplotlib inline
 
+#현재 수평, 수직인 선분만 검출함 thresh 값 조절을 잘 해야 올바른 값을 구할수있을듯
+
+
 #코너들의 좌표를 리턴
 def findCorners(img, nx, ny):
     #resultImage = np.copy(img)
