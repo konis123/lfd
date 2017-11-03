@@ -23,7 +23,7 @@ def readData():
         s = line.split('=')
         data.append(float(s[1]))
 
-    return data[0], data[1], data[2], data[3], data[4]
+    return data[0], data[1], data[2], data[3], data[4], int(data[5]), int(data[6])
 
 
 def onMouse(event, x, y, flags, param):
@@ -36,9 +36,9 @@ def onMouse(event, x, y, flags, param):
         b2c = getBansishingLine2Chess()
 
         #8은 가운데에서 가로로 8칸이있다는거
-        pd = (8 * CHESS_SPACE) / (corners[74][0][0]-corners[67][0][0])  #체스판에서의 픽셀당 센치(가운데에서 수평방향으로)
+        pd = (8 * CHESS_SPACE) / (corners[Y_CORNERS*X_CORNERS-1][0][0]-corners[Y_CORNERS*X_CORNERS - (Y_CORNERS//2) - 1][0][0])  #체스판에서의 픽셀당 센치(가운데에서 수평방향으로)
         newpd = b2c / temp * pd #클릭한곳에서의 픽셀당 센치미터
-        objX = newpd * (x-corners[67][0][0])
+        objX = newpd * (x-corners[Y_CORNERS*X_CORNERS - (Y_CORNERS//2) - 1][0][0])
         print( '수직방향거리: ',objZ,'수평방향거리: ',objX )  #픽셀당 센치에서 클릭한곳의 좌표만큼 곱해준거
 
 #소실점에서 체스판 바닥까지의 픽셀차이 구하기
@@ -60,22 +60,24 @@ if __name__=="__main__":
     obj = float(obj)*100
 
     imgFilePath = input('이미지 경로 입력 : ')
-    img = cv2.imread('./iphone3_white0.jpg')
-    #img = cv2.imread(imgFilePath)
+    #img = cv2.imread('./iphone3_white0.jpg')
+    img = cv2.imread(imgFilePath)
 
     ### 알고있는 정보이므로 직접 입력해주어야함
     '''
     CAMERA_HEIGHT = 140
     CAMERATOBONNET = 0
-    BONNETTOCHESS = 100
+    BONNETTOCHESS = 150
     CHESS_SPACE = 10
     CHESS_HEIGHT = 120
+    X_CORNERS = 5
+    Y_CORNERS = 15
     CAMERATOCHESS = CAMERATOBONNET + BONNETTOCHESS
     '''
     ###
 
     #data.txt 파일에서 위의 알고있는 값들을 읽어옴
-    CAMERA_HEIGHT, CAMERATOBONNET, BONNETTOCHESS, CHESS_SPACE, CHESS_HEIGHT = readData()
+    CAMERA_HEIGHT, CAMERATOBONNET, BONNETTOCHESS, CHESS_SPACE, CHESS_HEIGHT, X_CORNERS, Y_CORNERS = readData()
     CAMERATOCHESS = CAMERATOBONNET + BONNETTOCHESS
 
     # 가로, 세로 반환
@@ -83,15 +85,15 @@ if __name__=="__main__":
 
     #체스판 코너검출 및 그리기
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    ret, corners = cv2.findChessboardCorners(gray, (15,5), None)
-    img = cv2.drawChessboardCorners(img, (15,5), corners, ret)
+    ret, corners = cv2.findChessboardCorners(gray, (Y_CORNERS, X_CORNERS), None)
+    img = cv2.drawChessboardCorners(img, (Y_CORNERS,X_CORNERS), corners, ret)
 
     #체스보드를 이용해서 소실선의 픽셀위치(banishingLine)를 찾음
-    CHESS_SPACE_PIXEL = abs(corners[7][0][1]-corners[22][0][1]) #corners[0][0][0]: 가로 corners[0][0][1]: 세로
+    CHESS_SPACE_PIXEL = abs(corners[(Y_CORNERS//2)-1][0][1]-corners[(Y_CORNERS//2)+Y_CORNERS-1][0][1]) #corners[0][0][0]: 가로 corners[0][0][1]: 세로
     a = (CAMERA_HEIGHT - CHESS_HEIGHT)/CHESS_SPACE  #소실선과 체스판 밑면사이에 몇개의 칸이 있는지 구함
-    banishingLine = corners[67][0][1] - CHESS_SPACE_PIXEL*(a-1) #코너가 체스보드 맨밑에서시작이아니라 한칸위에서시작하므로 하나뺸만큼 빼줘야함
+    banishingLine = corners[Y_CORNERS*X_CORNERS - (Y_CORNERS//2) - 1][0][1] - CHESS_SPACE_PIXEL*(a-1) #코너가 체스보드 맨밑에서시작이아니라 한칸위에서시작하므로 하나뺸만큼 빼줘야함
     cv2.line(img, (0,int(banishingLine)), (img_size[0],int(banishingLine)), (255,0,0), 5)
-    cv2.circle(img, (corners[67][0][0], int(banishingLine)), 10, (0,255,0), -1)
+    cv2.circle(img, (corners[Y_CORNERS*X_CORNERS - (Y_CORNERS//2) - 1][0][0], int(banishingLine)), 10, (0,255,0), -1)
 
 
     #체스보드와 카메라와의 각도 cTheta
@@ -100,7 +102,7 @@ if __name__=="__main__":
     print('체스보드와 카메라와의 각도 : ',cAngle,'도')
 
     # 1도당 나태내는 픽셀수. 체스판한칸*8은 바닥에서 체스판가운데까지의 픽셀수
-    pa = (corners[67][0][1] + CHESS_SPACE_PIXEL - banishingLine) / cAngle
+    pa = (corners[Y_CORNERS*X_CORNERS - (Y_CORNERS//2) - 1][0][1] + CHESS_SPACE_PIXEL - banishingLine) / cAngle
 
     #input으로 받은 값과 소실점의 픽셀거리 차이구하기
     oTheta = math.atan(CAMERA_HEIGHT/obj)
