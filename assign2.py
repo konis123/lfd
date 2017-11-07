@@ -3,14 +3,30 @@ import numpy as np
 import math
 
 
+
 '''
+hd
 우리가 알고있는 정보 (단위: cm)
 
-카메라 높이 : 160
-카메라에서 보닛까지의 거리 : 100
+카메라 높이 : 140    //
+카메라에서 보닛까지의 거리 : 160    //
 보닛에서 체스보드까지와의 거리 : 100
 체스보드한칸의 길이 : 20
-체스보드 밑변과 바닥까지의 거리 : 100
+체스보드 밑변과 바닥까지의 거리 : 120
+보닛라인 : 714픽셀
+차폭 : 180
+
+센터x 734
+소실선 304
+
+FarY 508
+FarLeftX 615
+FarRightX 853
+NearY 587
+NearLeftX 570
+NearRightX 904
+
+
 '''
 
 
@@ -41,6 +57,21 @@ def onMouse(event, x, y, flags, param):
         objX = newpd * (x-corners[Y_CORNERS*X_CORNERS - (Y_CORNERS//2) - 1][0][0])
         print( '수직방향거리: ',objZ,'수평방향거리: ',objX )  #픽셀당 센치에서 클릭한곳의 좌표만큼 곱해준거
 
+
+
+def showLane(carW):
+    b2c = getBansishingLine2Chess()
+    pd = (8 * CHESS_SPACE) / (corners[Y_CORNERS * X_CORNERS - 1][0][0] - corners[Y_CORNERS * X_CORNERS - (Y_CORNERS // 2) - 1][0][0])  # 체스판에서의 픽셀당 센치(가운데에서 수평방향으로)
+    newpd = b2c / (objLine-banishingLine) * pd  # 클릭한곳에서의 픽셀당 센치미터
+    tempW = carW/2
+    objPoint = tempW/newpd
+
+    cv2.circle(img, (int(img_size[0]/2+objPoint), int(objLine)), 10, (150,128,196), -1)
+    cv2.circle(img, (int(img_size[0]/2-objPoint), int(objLine)), 10, (150,128,196), -1)
+
+
+
+
 #소실점에서 체스판 바닥까지의 픽셀차이 구하기
 def getBansishingLine2Chess():
 
@@ -55,13 +86,14 @@ def getBansishingLine2Chess():
 #global CAMERA_HEIGHT, CAMERATOBONNET, BONNETTOCHESS, CHESS_SPACE, CHESS_HEIGHT, CAMERATOCHESS
 #global banishingLine
 
+
 if __name__=="__main__":
     obj = input('몇 m 거리를 표시할까요?')
     obj = float(obj)*100
 
     imgFilePath = input('이미지 경로 입력 : ')
-    #img = cv2.imread('./iphone3_white0.jpg')
-    img = cv2.imread(imgFilePath)
+    img = cv2.imread('./iphone3_white0.jpg')
+    #img = cv2.imread(imgFilePath)
 
     ### 알고있는 정보이므로 직접 입력해주어야함
     '''
@@ -113,6 +145,9 @@ if __name__=="__main__":
     objLine = banishingLine + oAngle*pa
     cv2.line(img, (0,int(objLine)), (img_size[0],int(objLine)), (0,0,255), 5)
 
+
+    #lane?
+    showLane(180)
 
     #이미지 띄우기
     cv2.imshow('img', img)
